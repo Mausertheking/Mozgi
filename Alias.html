@@ -1,0 +1,542 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alias Mozgi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #09090b;
+            --surface: rgba(255, 255, 255, 0.03);
+            --surface-light: rgba(255, 255, 255, 0.08);
+            --border: rgba(255, 255, 255, 0.1);
+            
+            --primary-grad: linear-gradient(135deg, #8b5cf6, #d946ef);
+            --correct-grad: linear-gradient(135deg, #10b981, #059669);
+            --skip-grad: linear-gradient(135deg, #f43f5e, #e11d48);
+            --neutral-grad: linear-gradient(135deg, #6b7280, #4b5563);
+            
+            --primary-glow: rgba(139, 92, 246, 0.5);
+            --correct-glow: rgba(16, 185, 129, 0.4);
+            --skip-glow: rgba(244, 63, 94, 0.4);
+            
+            --text: #ffffff;
+            --text-sec: #a1a1aa;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(139, 92, 246, 0.15), transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(217, 70, 239, 0.1), transparent 50%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            box-sizing: border-box;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            overflow-y: auto;
+            padding-bottom: 20px;
+            animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .screen.active { display: flex; }
+
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .screen::-webkit-scrollbar { width: 4px; }
+        .screen::-webkit-scrollbar-thumb { background: var(--surface-light); border-radius: 4px; }
+
+        h1 { 
+            font-size: 38px; 
+            margin: 10px 0 24px 0; 
+            background: var(--primary-grad);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+        h2 { font-size: 18px; margin-bottom: 16px; color: var(--text); font-weight: 600; text-align: left; padding-left: 5px; }
+
+        .glass-panel {
+            background: var(--surface);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .settings-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .settings-row span { color: var(--text-sec); font-size: 15px; }
+        
+        input[type="number"], input[type="text"] {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        input[type="number"] { width: 70px; text-align: center; }
+        input[type="text"] { flex-grow: 1; margin-right: 10px; }
+        input[type="text"].players-input { width: 100%; margin-right: 0; margin-top: 8px; font-size: 13px; color: var(--text-sec); }
+        input:focus { border-color: rgba(139, 92, 246, 0.8); }
+
+        /* Чекбокс-свитч */
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); transition: .3s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background: var(--primary-grad); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .team-list { list-style: none; padding: 0; margin: 0 0 16px 0; }
+        .team-item {
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        .team-item:hover { border-color: rgba(255,255,255,0.1); }
+        .team-header { display: flex; justify-content: space-between; align-items: center; }
+
+        button {
+            border: none;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            user-select: none;
+        }
+        button:active { transform: scale(0.96); }
+        .btn-small { background: rgba(244, 63, 94, 0.15); color: #f43f5e; border-radius: 10px; padding: 6px 12px; }
+        .btn-add { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+        .btn-primary { 
+            background: var(--primary-grad); color: white; padding: 18px; width: 100%; margin-top: 10px; font-size: 18px;
+            box-shadow: 0 8px 24px var(--primary-glow); letter-spacing: 1px; text-transform: uppercase;
+        }
+        .btn-primary:hover { box-shadow: 0 12px 32px var(--primary-glow); transform: translateY(-2px); }
+
+        .cat-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+        .cat-label {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); padding: 8px 14px;
+            border-radius: 30px; font-size: 13px; cursor: pointer; transition: all 0.3s ease; color: var(--text-sec);
+        }
+        .cat-label.selected { background: rgba(139, 92, 246, 0.15); border-color: #8b5cf6; color: white; box-shadow: 0 0 15px rgba(139, 92, 246, 0.2); }
+
+        .timer-container { margin: 10px 0 20px 0; position: relative; }
+        .timer { font-size: 64px; font-weight: 800; background: var(--primary-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 20px var(--primary-glow)); }
+        
+        .card {
+            background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%);
+            border: 1px solid rgba(255,255,255,0.15); padding: 40px 20px; border-radius: 32px;
+            margin-bottom: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+            flex-grow: 1; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden;
+        }
+        .card::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            transform: skewX(-20deg); animation: shine 6s infinite;
+        }
+        @keyframes shine { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
+        .word-wrapper.pop { animation: popWord 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popWord { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+        .word { font-size: 34px; font-weight: 800; margin-bottom: 12px; line-height: 1.1; }
+        .category { font-size: 12px; color: #d946ef; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; background: rgba(217, 70, 239, 0.1); padding: 6px 12px; border-radius: 20px; display: inline-block; margin: 0 auto; }
+
+        .controls { display: flex; gap: 12px; height: 70px; margin-top: auto; }
+        .controls button { flex: 1; font-size: 18px; color: white; display: flex; align-items: center; justify-content: center; }
+        
+        .btn-correct { background: var(--correct-grad); box-shadow: 0 8px 24px var(--correct-glow); }
+        .btn-skip { background: var(--skip-grad); box-shadow: 0 8px 24px var(--skip-glow); }
+        .btn-skip-neutral { background: var(--neutral-grad); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+        
+        .leaderboard-item { display: flex; justify-content: space-between; align-items: center; font-size: 16px; margin-bottom: 10px; background: rgba(255,255,255,0.03); padding: 14px; border-radius: 12px; }
+        .leaderboard-item.first-place { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); }
+        .points-badge { background: var(--primary-grad); padding: 4px 10px; border-radius: 10px; font-weight: 800; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- Экран настроек (Старт) -->
+    <div id="setup-screen" class="screen active">
+        <h1>Alias Mozgi</h1>
+        
+        <div class="glass-panel" style="text-align: left;">
+            <h2>Команды и Игроки</h2>
+            <ul class="team-list" id="team-list"></ul>
+            <div style="display: flex; gap: 12px;">
+                <input type="text" id="new-team-name" placeholder="Новая команда..." maxlength="15">
+                <button class="btn-small btn-add" style="padding: 0 20px; border-radius: 12px;" onclick="addTeam()">+</button>
+            </div>
+            <div style="font-size: 12px; color: var(--text-sec); margin-top: 10px; text-align: center;">
+                Впишите имена игроков через запятую в карточке команды
+            </div>
+        </div>
+
+        <div class="glass-panel" style="text-align: left;">
+            <h2>Параметры</h2>
+            <div class="settings-row">
+                <span>Время (сек)</span>
+                <input type="number" id="setting-time" value="60" min="10" max="300">
+            </div>
+            <div class="settings-row">
+                <span>Очков для победы</span>
+                <input type="number" id="setting-points" value="50" min="5" max="500">
+            </div>
+            <div class="settings-row" style="margin-top: 20px;">
+                <span>Штраф за пропуск (-1)</span>
+                <label class="switch">
+                    <input type="checkbox" id="setting-penalty" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="glass-panel" style="text-align: left;">
+            <h2>Категории</h2>
+            <div class="cat-grid" id="category-grid"></div>
+        </div>
+
+        <button class="btn-primary" onclick="initGame()">Начать игру</button>
+    </div>
+
+    <!-- Экран передачи хода -->
+    <div id="preround-screen" class="screen" style="justify-content: center;">
+        <h2 style="text-align: center; color: var(--text-sec);">Ходит команда</h2>
+        <h1 id="current-team-name" style="font-size: 42px; margin-bottom: 5px;">Название</h1>
+        
+        <div id="explainer-container" style="margin-bottom: 25px; font-size: 18px; color: var(--text-sec);">
+            Объясняет: <span id="current-explainer" style="color: #d946ef; font-weight: 800; font-size: 22px;">Игрок</span>
+        </div>
+
+        <div style="color: var(--text-sec); margin-bottom: 30px; font-size: 16px;">
+            Прогресс: <span id="current-team-score" style="color: white; font-weight: bold;">0</span> / <span id="target-points">50</span>
+        </div>
+        
+        <div class="glass-panel" id="preround-leaderboard" style="text-align: left;"></div>
+
+        <button class="btn-primary" onclick="startRound()" style="margin-top: 10px;">Готовы!</button>
+    </div>
+
+    <!-- Активный экран игры -->
+    <div id="game-screen" class="screen">
+        <div class="timer-container">
+            <div class="timer" id="timer">60</div>
+        </div>
+        
+        <div style="color: var(--text-sec); font-size: 16px; margin-bottom: 15px; font-weight: 600;">
+            Очки за раунд: <span id="round-score" style="color: white; font-size: 22px;">0</span>
+        </div>
+        
+        <div class="card">
+            <div class="word-wrapper" id="word-animator">
+                <div class="word" id="current-word">Слово</div>
+                <div class="category" id="current-category">Категория</div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn-skip" id="btn-skip" onclick="handleWord(false)">Пропуск (-1)</button>
+            <button class="btn-correct" onclick="handleWord(true)">Угадали (+1)</button>
+        </div>
+    </div>
+
+    <!-- Экран итогов раунда -->
+    <div id="result-screen" class="screen" style="justify-content: center;">
+        <h2 style="text-align: center; color: var(--text-sec);">Время вышло!</h2>
+        <h1 id="result-team-name" style="font-size: 36px; margin-bottom: 30px;">Команда</h1>
+        
+        <div class="glass-panel" style="padding: 40px 20px;">
+            <div style="color: var(--text-sec); font-size: 18px; margin-bottom: 10px;">Заработано за раунд</div>
+            <div id="final-round-score" style="font-size: 56px; font-weight: 800; color: #10b981; margin-bottom: 20px;">+0</div>
+            
+            <div style="color: var(--text-sec); font-size: 16px;">
+                Общий счет: <span id="final-total-score" style="color: white; font-weight: bold; font-size: 24px;">0</span>
+            </div>
+        </div>
+        
+        <button class="btn-primary" onclick="nextTurn()">Продолжить</button>
+    </div>
+
+    <!-- Экран победителя -->
+    <div id="winner-screen" class="screen" style="justify-content: center;">
+        <h2 style="text-align: center; color: var(--text-sec);">Победитель</h2>
+        <h1 id="winner-name" style="font-size: 42px; margin-bottom: 30px; background: var(--correct-grad); -webkit-background-clip: text;">Команда!</h1>
+        
+        <div class="glass-panel" id="final-leaderboard" style="text-align: left; margin-bottom: 30px;"></div>
+
+        <button class="btn-primary" onclick="resetToSetup()">Новая игра</button>
+    </div>
+
+</div>
+
+<script>
+    // Обновленная База слов (добавлены 4 новые категории)
+    const categoriesDB = {
+        "Исторические личности": ["Александр Македонский", "Юлий Цезарь", "Наполеон Бонапарт", "Петр I", "Клеопатра", "Альберт Эйнштейн", "Исаак Ньютон", "Никола Тесла", "Джордж Вашингтон", "Авраам Линкольн", "Чингисхан", "Леонардо да Винчи", "Галилео Галилей", "Жанна д'Арк", "Уинстон Черчилль", "Карл Маркс", "Владимир Ленин", "Махатма Ганди", "Нельсон Мандела", "Мартин Лютер Кинг", "Христофор Колумб", "Аристотель", "Платон", "Сократ"],
+        "Страны": ["Россия", "США", "Азербайджан", "Турция", "Китай", "Япония", "Великобритания", "Франция", "Германия", "Италия", "Испания", "Бразилия", "Канада", "Индия", "Австралия", "Египет", "Мексика", "Аргентина", "Южная Корея", "Швеция", "Швейцария", "Греция", "Португалия", "Нидерланды"],
+        "Математика": ["Алгебра", "Геометрия", "Уравнение", "Дробь", "Интеграл", "Производная", "Логарифм", "Теорема", "Аксиома", "Косинус", "Синус", "Тангенс", "Гипотенуза", "Катет", "Периметр", "Площадь", "Объем", "Радиус", "Диаметр", "Вектор", "Матрица", "Координаты", "Парабола", "Гипербола", "Корень", "Степень", "Процент", "Функция"],
+        "Соцсети и приложения": ["Instagram", "Telegram", "TikTok", "YouTube", "WhatsApp", "Facebook", "X (Twitter)", "Snapchat", "Discord", "Twitch", "Reddit", "LinkedIn", "Pinterest", "Viber", "Skype", "Tinder", "Spotify", "Netflix", "Zoom", "Uber", "Duolingo", "CapCut", "Roblox", "Shazam"],
+        "Фильмы": ["Головоломка 2", "Дюна 2", "Дэдпул и Росомаха", "Аве Мария", "Человек-паук", "Мстители", "Аватар", "Интерстеллар", "Матрица", "Начало", "Темный рыцарь", "Бойцовский клуб", "Властелин колец", "Терминатор", "Назад в будущее", "Гладиатор", "Титаник", "Оппенгеймер", "Барби", "Джон Уик", "Гарри Поттер", "Пираты Карибского моря"],
+        "Сленг CS2": ["Клатч", "Раш Б", "Дроп", "Эко-раунд", "Авик", "Плент", "Дифьюз", "Хэдшот", "Флешка", "Смок", "Молик", "Раскидка", "Спрей", "Тэппинг", "Кемпер", "Буст", "Пуш", "Холд", "Сейв", "Фраг", "Эйс", "Тильт", "Смурф", "Шифт"],
+        "Бренды": ["Apple", "Balenciaga", "Tesla", "Dyson", "Nike", "Spotify", "Samsung", "Google", "Microsoft", "Amazon", "Coca-Cola", "Pepsi", "Adidas", "Gucci", "Louis Vuitton", "BMW", "Mercedes", "Toyota", "Sony", "Nintendo", "Xiaomi", "Poco", "Redmi"],
+        "Аниме": ["Наруто", "Атака титанов", "Тетрадь смерти", "Магическая битва", "Клинок демонов", "Евангелион", "Ван-Пис", "Человек-бензопила", "Берсерк", "Драконий жемчуг", "Блич", "Стальной алхимик", "Токийский гуль", "Охотник х Охотник", "Геройская академия", "Хвост Феи", "ДжоДжо", "Киберпанк", "Семья шпиона", "Гинтама", "Ванпанчмен", "Неуязвимый"],
+        "DC / Marvel": ["Бэтмен", "Железный человек", "Харли Квинн", "Дэдпул", "Чудо-женщина", "Веном", "Человек-паук", "Капитан Америка", "Тор", "Халк", "Черная вдова", "Супермен", "Флэш", "Аквамен", "Джокер", "Зеленый Гоблин", "Локи", "Танос", "Доктор Стрэндж", "Росомаха", "Магнето", "Каратель", "Сорвиголова", "Черная пантера"],
+        "Футбол": ["Реал Мадрид", "МЮ", "ПСЖ", "Барселона", "Бавария", "Манчестер Сити", "Ливерпуль", "Челси", "Арсенал", "Ювентус", "Милан", "Интер", "Наполи", "Атлетико", "Боруссия", "Аякс", "Порту", "Бенфика", "Галатасарай", "Фенербахче", "Бешикташ", "Карабах", "Тоттенхэм"],
+        "Ютуберы": ["MrBeast", "Влад А4", "Дима Масленников", "IShowSpeed", "Куплинов", "Мармок", "PewDiePie", "xQc", "Kai Cenat", "Logan Paul", "KSI", "Wylsacom", "Брайн Мапс", "Сыендук", "Utopia Show", "BadComedian", "Данкар", "Эдисон Перец", "Влад Глент", "Itpedia", "Хазе", "Экзайл"],
+        "ИИ-компании": ["OpenAI", "Midjourney", "Anthropic", "xAI", "DeepMind", "Perplexity", "ChatGPT", "Claude", "Gemini", "Copilot", "Stable Diffusion", "Runway", "Hugging Face", "Synthesia", "ElevenLabs", "Scale AI", "Jasper", "Character.ai", "Mistral", "Cohere", "Suno", "Llama"],
+        "Видеоигры": ["Minecraft", "Dota 2", "Cyberpunk 2077", "Fortnite", "Valorant", "GTA VI", "CS2", "RDR 2", "Ведьмак 3", "League of Legends", "Roblox", "Apex Legends", "Overwatch", "Call of Duty", "Elden Ring", "God of War", "The Last of Us", "Ghost of Tsushima", "Mortal Kombat", "EA FC", "Super Mario", "Assetto Corsa"],
+        "Базовые": ["Пылесос", "Микроволновка", "Светофор", "Картинг", "Грейдинг", "Турция", "Баку", "Пекин", "Кибербезопасность", "Полицейский", "Маузер", "Яблоко", "Стол", "Стул", "Собака", "Кошка", "Машина", "Самолет", "Дерево", "Вода", "Огонь", "Лес", "Гора", "Река", "Озеро", "Море", "Небо", "Звезда", "Луна", "Солнце", "Дождь", "Снег", "Ветер", "Облако", "Туман", "Гроза", "Молния", "Радуга", "Камень", "Песок", "Город", "Деревня", "Улица", "Дорога", "Мост", "Здание", "Квартира", "Крыша", "Окно", "Дверь", "Стена", "Лестница", "Лифт", "Балкон", "Кровать", "Диван", "Кресло", "Шкаф", "Ковер", "Лампа", "Зеркало", "Часы", "Телевизор", "Компьютер", "Ноутбук", "Телефон", "Планшет", "Наушники", "Зарядка", "Розетка", "Утюг", "Чайник", "Холодильник", "Плита", "Духовка", "Раковина", "Ванна", "Душ", "Мыло", "Шампунь", "Полотенце", "Щетка", "Паста", "Расческа", "Ножницы", "Рюкзак", "Сумка", "Кошелек", "Очки", "Зонт", "Ключи", "Замок", "Хлеб", "Молоко", "Сыр", "Колбаса", "Мясо", "Курица", "Рыба", "Яйцо", "Масло", "Соль", "Сахар", "Чай", "Кофе", "Сок", "Лимонад", "Вино", "Пиво", "Торт", "Печенье", "Шоколад", "Мороженое", "Банан", "Апельсин", "Лимон", "Виноград", "Клубника", "Арбуз", "Помидор", "Огурец", "Картошка", "Морковь", "Лук", "Чеснок", "Гриб", "Орех", "Мед", "Каша", "Суп", "Макароны", "Рис", "Пицца", "Бургер", "Суши", "Шашлык", "Салат"]
+    };
+
+    let teams = [
+        {name: "Team Mauser", players: ["Маузер", "Али"], currentPlayerIndex: 0, score: 0}, 
+        {name: "Team Maksud", players: ["Максуд", "Ильяс"], currentPlayerIndex: 0, score: 0}
+    ];
+    let activeCategories = Object.keys(categoriesDB);
+    let gameDB = [], currentDeck = [];
+    let currentTeamIndex = 0, roundTimeSetting = 60, winScoreSetting = 50, isPenaltyActive = true;
+    let currentRoundScore = 0, timeLeft = 0, timerInterval;
+
+    function renderSetup() {
+        const teamList = document.getElementById('team-list');
+        teamList.innerHTML = '';
+        teams.forEach((t, i) => {
+            teamList.innerHTML += `
+                <li class="team-item">
+                    <div class="team-header">
+                        <span style="font-weight: 800; font-size: 16px;">${t.name}</span>
+                        <button class="btn-small" onclick="removeTeam(${i})">✕</button>
+                    </div>
+                    <input type="text" class="players-input" placeholder="Игроки (например: Маузер, Максуд)" value="${t.players.join(', ')}" onchange="updatePlayers(${i}, this.value)">
+                </li>
+            `;
+        });
+
+        const catGrid = document.getElementById('category-grid');
+        catGrid.innerHTML = '';
+        Object.keys(categoriesDB).forEach(cat => {
+            const isSelected = activeCategories.includes(cat);
+            catGrid.innerHTML += `
+                <label class="cat-label ${isSelected ? 'selected' : ''}" onclick="toggleCategory('${cat}', this)">
+                    ${cat}
+                </label>
+            `;
+        });
+    }
+
+    function addTeam() {
+        const input = document.getElementById('new-team-name');
+        const name = input.value.trim();
+        if (name && teams.length < 8) { teams.push({name, players: [], currentPlayerIndex: 0, score: 0}); input.value = ''; renderSetup(); }
+    }
+    
+    function removeTeam(i) { if (teams.length > 2) { teams.splice(i, 1); renderSetup(); } else alert("Нужно минимум 2 команды"); }
+    
+    function updatePlayers(i, val) {
+        teams[i].players = val.split(',').map(s => s.trim()).filter(s => s);
+    }
+    
+    function toggleCategory(cat, el) {
+        if (activeCategories.includes(cat)) {
+            if (activeCategories.length > 1) { activeCategories = activeCategories.filter(c => c !== cat); el.classList.remove('selected'); }
+        } else { activeCategories.push(cat); el.classList.add('selected'); }
+    }
+
+    function shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function renderLeaderboard(elementId) {
+        const board = document.getElementById(elementId);
+        let html = '';
+        const sortedTeams = [...teams].sort((a, b) => b.score - a.score);
+        sortedTeams.forEach((t, i) => {
+            const isFirst = i === 0 && t.score > 0;
+            html += `
+            <div class="leaderboard-item ${isFirst ? 'first-place' : ''}">
+                <span style="font-weight: 600;">${i + 1}. ${t.name} ${isFirst ? '👑' : ''}</span>
+                <span class="points-badge">${t.score}</span>
+            </div>`;
+        });
+        board.innerHTML = html;
+    }
+
+    function initGame() {
+        roundTimeSetting = parseInt(document.getElementById('setting-time').value) || 60;
+        winScoreSetting = parseInt(document.getElementById('setting-points').value) || 50;
+        isPenaltyActive = document.getElementById('setting-penalty').checked;
+        
+        // Настройка кнопки пропуска на игровом экране
+        const skipBtn = document.getElementById('btn-skip');
+        if (isPenaltyActive) {
+            skipBtn.innerText = "Пропуск (-1)";
+            skipBtn.className = "btn-skip";
+        } else {
+            skipBtn.innerText = "Пропуск";
+            skipBtn.className = "btn-skip-neutral";
+        }
+
+        gameDB = [];
+        activeCategories.forEach(cat => categoriesDB[cat].forEach(w => gameDB.push({ w, c: cat })));
+        
+        teams.forEach(t => { t.score = 0; t.currentPlayerIndex = 0; });
+        currentTeamIndex = 0;
+        currentDeck = shuffle([...gameDB]);
+        prepareTurn();
+    }
+
+    function prepareTurn() {
+        const team = teams[currentTeamIndex];
+        document.getElementById('current-team-name').innerText = team.name;
+        document.getElementById('current-team-score').innerText = team.score;
+        document.getElementById('target-points').innerText = winScoreSetting;
+        
+        // Логика текущего объясняющего игрока
+        const explainerEl = document.getElementById('explainer-container');
+        if (team.players && team.players.length > 0) {
+            explainerEl.style.display = "block";
+            document.getElementById('current-explainer').innerText = team.players[team.currentPlayerIndex];
+        } else {
+            explainerEl.style.display = "none";
+        }
+
+        renderLeaderboard('preround-leaderboard');
+        showScreen('preround-screen');
+    }
+
+    function startRound() {
+        currentRoundScore = 0;
+        timeLeft = roundTimeSetting;
+        document.getElementById('round-score').innerText = currentRoundScore;
+        
+        const timerEl = document.getElementById('timer');
+        timerEl.innerText = timeLeft;
+        timerEl.style.color = "";
+        
+        showScreen('game-screen');
+        nextWord();
+        
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            timerEl.innerText = timeLeft;
+            if (timeLeft <= 10) timerEl.style.color = "#f43f5e";
+            if (timeLeft <= 0) endRound();
+        }, 1000);
+    }
+
+    function animateWordChange() {
+        const wrapper = document.getElementById('word-animator');
+        wrapper.classList.remove('pop');
+        void wrapper.offsetWidth; 
+        wrapper.classList.add('pop');
+    }
+
+    function nextWord() {
+        if (currentDeck.length === 0) currentDeck = shuffle([...gameDB]);
+        const { w, c } = currentDeck.pop();
+        document.getElementById('current-word').innerText = w;
+        document.getElementById('current-category').innerText = c;
+        animateWordChange();
+    }
+
+    function handleWord(isCorrect) {
+        let pointsChange = isCorrect ? 1 : (isPenaltyActive ? -1 : 0);
+        currentRoundScore += pointsChange;
+        
+        document.getElementById('round-score').innerText = currentRoundScore;
+        const rs = document.getElementById('round-score');
+        rs.style.color = currentRoundScore > 0 ? '#10b981' : (currentRoundScore < 0 ? '#f43f5e' : 'white');
+        
+        nextWord();
+    }
+
+    function endRound() {
+        clearInterval(timerInterval);
+        const team = teams[currentTeamIndex];
+        team.score += currentRoundScore;
+        
+        // Сдвигаем очередь игрока в текущей команде
+        if (team.players && team.players.length > 0) {
+            team.currentPlayerIndex = (team.currentPlayerIndex + 1) % team.players.length;
+        }
+        
+        document.getElementById('result-team-name').innerText = team.name;
+        const frs = document.getElementById('final-round-score');
+        frs.innerText = (currentRoundScore > 0 ? '+' : '') + currentRoundScore;
+        frs.style.color = currentRoundScore >= 0 ? '#10b981' : '#f43f5e';
+        
+        document.getElementById('final-total-score').innerText = team.score;
+        showScreen('result-screen');
+    }
+
+    function nextTurn() {
+        if (currentTeamIndex === teams.length - 1) {
+            const winner = [...teams].sort((a, b) => b.score - a.score)[0];
+            if (winner.score >= winScoreSetting) {
+                document.getElementById('winner-name').innerText = winner.name;
+                renderLeaderboard('final-leaderboard');
+                showScreen('winner-screen');
+                return;
+            }
+        }
+        currentTeamIndex = (currentTeamIndex + 1) % teams.length;
+        prepareTurn();
+    }
+
+    function resetToSetup() { renderSetup(); showScreen('setup-screen'); }
+
+    renderSetup();
+</script>
+</body>
+</html>
